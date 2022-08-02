@@ -24,7 +24,7 @@ world.attachRigidBody(node)
 shape = BulletBoxShape(Vec3(0.5, 0.5, 0.5))
 node = BulletRigidBodyNode('Box')
 node.setMass(1.0)
-node.setLinearVelocity((5,0,4))
+node.setLinearVelocity((0,0,4))
 node.addShape(shape)
 np = render.attachNewNode(node)
 np.setPos(0, 0, 2)
@@ -37,7 +37,6 @@ model.reparentTo(np)
 def update(task):
     dt = globalClock.getDt()
     world.doPhysics(dt)
-    base.cam.lookAt(node.getPos())
     return task.cont
 
 taskMgr.add(update, 'update')
