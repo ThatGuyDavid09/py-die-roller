@@ -8,6 +8,7 @@ from panda3d.core import Material, AmbientLight, load_prc_file
 
 load_prc_file("myConfig.prc")
 
+
 class MyApp(ShowBase):
 
     def __init__(self):
@@ -32,7 +33,7 @@ class MyApp(ShowBase):
         #     i.setMetallic(1)
 
         self.alight = AmbientLight('alight')
-        self.alight.setColor((1,1,1,1))
+        self.alight.setColor((1, 1, 1, 1))
         self.alnp = self.render.attachNewNode(self.alight)
         self.render.setLight(self.alnp)
 
