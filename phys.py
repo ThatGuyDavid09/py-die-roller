@@ -1,8 +1,11 @@
 import aioconsole as aioconsole
 import simplepbr
+from direct.gui.DirectEntry import DirectEntry
+from direct.gui.OnscreenText import OnscreenText
 from direct.showbase.DirectObject import DirectObject
 from direct.showbase.ShowBase import ShowBase
-from panda3d.core import Vec3, load_prc_file, MeshDrawer2D, Plane, MeshDrawer, PointLight, DirectionalLight, Point3
+from panda3d.core import Vec3, load_prc_file, MeshDrawer2D, Plane, MeshDrawer, PointLight, DirectionalLight, Point3, \
+    TextNode
 from panda3d.bullet import BulletWorld, BulletConvexHullShape
 from panda3d.bullet import BulletPlaneShape
 from panda3d.bullet import BulletRigidBodyNode
@@ -26,6 +29,7 @@ class App(ShowBase):
         ShowBase.__init__(self)
         # simplepbr.init()
 
+        self.force_mod = 10
         self.collision_handled = False
         self.disable_mouse()
 
@@ -64,6 +68,26 @@ class App(ShowBase):
 
         self.taskMgr.add(self.update, 'update')
         # taskMgr.add(self.draw_plane, "meshdrawer task")
+
+        # Text
+        # bk_text = "This is my Demo"
+        # self.textObject = OnscreenText(text=bk_text, pos=(0.95, -0.95), scale=0.07,
+        #                           fg=(1, 0.5, 0.5, 1), align=TextNode.ACenter,
+        #                           mayChange=1)
+
+        self.entry = DirectEntry(text="", scale=.2, command=self.setText,
+                            initialText="Type Something", numLines=1, focus=1, focusInCommand=self.clearText,
+                                 pos=(.2,.1,-.8))
+
+        # callback function to set  text
+    def setText(self, textEntered):
+        self.force_mod = int(textEntered)
+
+    # clear the text
+    def clearText(self):
+        self.entry.enterText('')
+
+        # add text entry
 
     # def draw_plane(self, task):
     #     self.generator.begin(self.cam, self.render)
@@ -121,8 +145,8 @@ class App(ShowBase):
             if not self.collision_handled and result.hasHit() and result.getNode().getPythonTag("movable"):
                 f_app_pt = result.getHitPos()
                 force_dir_v = (result.getToPos() - result.getFromPos()).normalized()
-                result.getNode().applyForce(force_dir_v * force_mod, f_app_pt)
-                # print("Collision handled")
+                result.getNode().applyImpulse(force_dir_v * self.force_mod, f_app_pt)
+                print("Collision handled")
                 self.collision_handled = True
         else:
             self.collision_handled = False
@@ -134,7 +158,7 @@ class App(ShowBase):
         z = cos(radians(pitch)) * sin(radians(roll))
         dir_vec = Vec3(x, y, z)
 
-        modifier = 1
+        modifier = .1
         if keys_down["w"]:
             self.cam.setPos(self.cam.getPos() + dir_vec * 1 * modifier)
         if keys_down["s"]:
@@ -155,9 +179,9 @@ class App(ShowBase):
             self.cam.setPos(self.cam.getPos() + dir_vec * -1 * modifier)
 
         if keys_down["arrow_down"]:
-            self.cam.setPos(self.cam.getPos() + Vec3(0, 0, 1) * modifier)
-        if keys_down["arrow_up"]:
             self.cam.setPos(self.cam.getPos() + Vec3(0, 0, -1) * modifier)
+        if keys_down["arrow_up"]:
+            self.cam.setPos(self.cam.getPos() + Vec3(0, 0, 1) * modifier)
 
         return task.cont
 
