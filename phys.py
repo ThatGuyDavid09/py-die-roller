@@ -1,3 +1,4 @@
+import aioconsole as aioconsole
 import simplepbr
 from direct.showbase.DirectObject import DirectObject
 from direct.showbase.ShowBase import ShowBase
@@ -6,11 +7,19 @@ from panda3d.bullet import BulletWorld, BulletConvexHullShape
 from panda3d.bullet import BulletPlaneShape
 from panda3d.bullet import BulletRigidBodyNode
 from panda3d.bullet import BulletBoxShape
+from math import *
 
 load_prc_file("myConfig.prc")
 
 mouse_down = False
-
+keys_down = {
+    "w": False,
+    "a": False,
+    "s": False,
+    "d": False,
+    "arrow_down": False,
+    "arrow_up": False
+}
 
 class App(ShowBase):
     def __init__(self):
@@ -85,15 +94,17 @@ class App(ShowBase):
 
         return node_parent_path, physics_node
 
-    # Update
+    # TODO: add way to input info
     def update(self, task):
         # print(mouse_down)
+        # print(keys_down)
 
         dt = globalClock.getDt()
         self.world.doPhysics(dt)
 
         self.cam.lookAt(self.ico.getPos())
 
+        # Handle clicking forces
         if mouse_down and self.mouseWatcherNode.hasMouse():
             # Collision checks with mouse
             pMouse = self.mouseWatcherNode.getMouse()
@@ -110,11 +121,43 @@ class App(ShowBase):
             if not self.collision_handled and result.hasHit() and result.getNode().getPythonTag("movable"):
                 f_app_pt = result.getHitPos()
                 force_dir_v = (result.getToPos() - result.getFromPos()).normalized()
-                result.getNode().applyForce(force_dir_v * 100, f_app_pt)
-                print("Collision handled")
+                result.getNode().applyForce(force_dir_v * force_mod, f_app_pt)
+                # print("Collision handled")
                 self.collision_handled = True
         else:
             self.collision_handled = False
+
+        # Handle camera movement
+        heading, pitch, roll = self.cam.getHpr()
+        x = -cos(radians(heading)) * sin(radians(pitch)) * sin(radians(roll)) - sin(radians(heading)) * cos(radians(roll))
+        y = -sin(radians(heading)) * sin(radians(pitch)) * sin(radians(roll)) + cos(radians(heading)) * cos(radians(roll))
+        z = cos(radians(pitch)) * sin(radians(roll))
+        dir_vec = Vec3(x, y, z)
+
+        modifier = 1
+        if keys_down["w"]:
+            self.cam.setPos(self.cam.getPos() + dir_vec * 1 * modifier)
+        if keys_down["s"]:
+            self.cam.setPos(self.cam.getPos() + dir_vec * -1 * modifier)
+
+        heading, pitch, roll = self.cam.getHpr()
+        heading += 90
+        x = -cos(radians(heading)) * sin(radians(pitch)) * sin(radians(roll)) - sin(radians(heading)) * cos(
+            radians(roll))
+        y = -sin(radians(heading)) * sin(radians(pitch)) * sin(radians(roll)) + cos(radians(heading)) * cos(
+            radians(roll))
+        z = cos(radians(pitch)) * sin(radians(roll))
+        dir_vec = Vec3(x, y, z)
+
+        if keys_down["a"]:
+            self.cam.setPos(self.cam.getPos() + dir_vec * 1 * modifier)
+        if keys_down["d"]:
+            self.cam.setPos(self.cam.getPos() + dir_vec * -1 * modifier)
+
+        if keys_down["arrow_down"]:
+            self.cam.setPos(self.cam.getPos() + Vec3(0, 0, 1) * modifier)
+        if keys_down["arrow_up"]:
+            self.cam.setPos(self.cam.getPos() + Vec3(0, 0, -1) * modifier)
 
         return task.cont
 
@@ -133,16 +176,30 @@ class MouseHandler(DirectObject):
         mouse_down = False
 
 
-# TODO: make it so you can move camera around so forces can be applied properly
 class ReadKeys(DirectObject):
     def __init__(self):
         self.accept('r-up', self.reset)
+        
+        self.register_up_down("w")
+        self.register_up_down("a")
+        self.register_up_down("s")
+        self.register_up_down("d")
+        self.register_up_down("arrow_down")
+        self.register_up_down("arrow_up")
 
     def reset(self):
         global app
         app.ico.setPos(*app.ico_start)
         app.ico_phys.apply_central_impulse(app.ico_phys.getLinearVelocity() * -1)
         app.ico_phys.applyTorqueImpulse(app.ico_phys.getAngularVelocity() * -1)
+
+    def register_up_down(self, key):
+        self.accept(key, self.update_state, [key, True])
+        self.accept(f"{key}-up", self.update_state, [key, False])
+
+    def update_state(self, key, state):
+        global keys_down
+        keys_down[key] = state
 
 
 m = MouseHandler()
